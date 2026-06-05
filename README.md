@@ -35,11 +35,9 @@ pip install opencv-python numpy mediapipe
 3. **Run the script** using Python:
 
 ```bash
-python rasengan_effect.py
+python rasengan.py
 
 ```
-
-*(Note: Replace `rasengan_effect.py` with the actual name of your Python file).*
 
 When you launch the program for the first time, it will take a few seconds to download the lightweight MediaPipe model. Once your webcam activates, simply hold your hand up to the camera to charge your chakra!
 
