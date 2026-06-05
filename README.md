@@ -1,7 +1,3 @@
-# Rasengan
-Here is an attractive, well-structured README file tailored for your Rasengan AR project. You can save this as `README.md` in the same directory as your Python script.
-
----
 
 # 🌀 Interactive Rasengan AR Effect
 
