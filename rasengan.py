@@ -8,7 +8,6 @@ import urllib.request
 import os
 
 def download_model():
-    """Download the hand landmarker model if not present"""
     model_path = "hand_landmarker.task"
     if not os.path.exists(model_path):
         print("Downloading hand landmarker model...")
@@ -19,10 +18,7 @@ def download_model():
 
 class RasenganEffect:
     def __init__(self):
-        # Initialize MediaPipe Hands (Task API)
         model_path = download_model()
-
-        # CORRECT IMPORTS for newer MediaPipe versions
         BaseOptions = mp.tasks.BaseOptions
         HandLandmarker = mp.tasks.vision.HandLandmarker
         HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
@@ -38,27 +34,21 @@ class RasenganEffect:
         )
         self.landmarker = HandLandmarker.create_from_options(options)
 
-        # Rasengan parameters
         self.angle = 0
         self.particles = []
         self.trail_points = deque(maxlen=20)
         self.rasengan_radius = 60
-        self.chakra_color = (100, 200, 255)  # Light blue (BGR)
-        self.core_color = (255, 255, 255)    # White core
-
-        # Particle system
+        self.chakra_color = (100, 200, 255)  
+        self.core_color = (255, 255, 255)    
         self.max_particles = 100
 
     def get_palm_center(self, landmarks, frame_shape):
         """Calculate palm center from landmarks"""
         h, w = frame_shape[:2]
-
-        # Use wrist (0), index_mcp (5), pinky_mcp (17) to find palm center
         wrist = landmarks[0]
         index_mcp = landmarks[5]
         pinky_mcp = landmarks[17]
 
-        # Average position (landmarks are normalized 0-1)
         cx = int((wrist.x + index_mcp.x + pinky_mcp.x) / 3 * w)
         cy = int((wrist.y + index_mcp.y + pinky_mcp.y) / 3 * h)
 
@@ -81,12 +71,12 @@ class RasenganEffect:
         """Draw hand skeleton on frame"""
         h, w = frame.shape[:2]
         connections = [
-            (0, 1), (1, 2), (2, 3), (3, 4),  # Thumb
-            (0, 5), (5, 6), (6, 7), (7, 8),  # Index
-            (0, 9), (9, 10), (10, 11), (11, 12),  # Middle
-            (0, 13), (13, 14), (14, 15), (15, 16),  # Ring
-            (0, 17), (17, 18), (18, 19), (19, 20),  # Pinky
-            (5, 9), (9, 13), (13, 17)  # Palm
+            (0, 1), (1, 2), (2, 3), (3, 4),  
+            (0, 5), (5, 6), (6, 7), (7, 8),  
+            (0, 9), (9, 10), (10, 11), (11, 12),  
+            (0, 13), (13, 14), (14, 15), (15, 16),  
+            (0, 17), (17, 18), (18, 19), (19, 20),
+            (5, 9), (9, 13), (13, 17)  
         ]
 
         points = []
@@ -120,18 +110,18 @@ class RasenganEffect:
 
     def update_particles(self, center, radius):
         """Update and spawn particles"""
-        # Spawn new particles
+        
         while len(self.particles) < self.max_particles:
             self.particles.append(self.create_particle(center, radius))
 
-        # Update existing particles
+        
         new_particles = []
         for p in self.particles:
             p['x'] += p['vx'] + random.uniform(-1, 1)
             p['y'] += p['vy'] + random.uniform(-1, 1)
             p['life'] -= 0.02
 
-            # Spiral toward center
+            
             dx = center[0] - p['x']
             dy = center[1] - p['y']
             dist = math.sqrt(dx**2 + dy**2)
@@ -145,21 +135,13 @@ class RasenganEffect:
         self.particles = new_particles
 
     def draw_rasengan(self, frame, center, hand_size):
-        """Draw the Rasengan effect"""
+       
         overlay = frame.copy()
         h, w = frame.shape[:2]
-
-        # Scale based on hand size
         base_radius = int(hand_size * 0.4)
         self.rasengan_radius = max(30, min(base_radius, 150))
-
-        # Update rotation
         self.angle = (self.angle + 15) % 360
-
-        # Update particles
         self.update_particles(center, self.rasengan_radius)
-
-        # Draw outer chakra glow (multiple layers)
         for i in range(5):
             radius = self.rasengan_radius + i * 15
             alpha = 0.15 - i * 0.02
@@ -169,8 +151,6 @@ class RasenganEffect:
                 self.chakra_color[2]
             )
             cv2.circle(overlay, center, radius, color, -1)
-
-        # Draw spinning chakra rings
         for ring in range(3):
             ring_radius = self.rasengan_radius * (0.3 + ring * 0.35)
             points = []
@@ -178,7 +158,7 @@ class RasenganEffect:
 
             for i in range(num_points):
                 angle_rad = math.radians(self.angle * (1 + ring * 0.5) + i * (360/num_points))
-                # Add wobble
+    
                 wobble = math.sin(angle_rad * 3 + self.angle * 0.1) * 5
                 r = ring_radius + wobble
 
@@ -186,13 +166,11 @@ class RasenganEffect:
                 y = int(center[1] + math.sin(angle_rad) * r)
                 points.append((x, y))
 
-            # Draw ring with glow
+            
             for i in range(len(points)):
                 pt1 = points[i]
                 pt2 = points[(i+1) % len(points)]
                 cv2.line(overlay, pt1, pt2, self.chakra_color, 2, cv2.LINE_AA)
-
-        # Draw particles
         for p in self.particles:
             alpha = p['life'] / p['max_life']
             size = int(p['size'] * alpha)
@@ -205,13 +183,11 @@ class RasenganEffect:
                 x, y = int(p['x']), int(p['y'])
                 if 0 <= x < w and 0 <= y < h:
                     cv2.circle(overlay, (x, y), size, color, -1)
-
-        # Draw bright core
         core_radius = int(self.rasengan_radius * 0.3)
         cv2.circle(overlay, center, core_radius, self.core_color, -1)
         cv2.circle(overlay, center, core_radius + 5, (200, 230, 255), 3)
 
-        # Add electric/static effect (random lines)
+        
         for _ in range(8):
             angle1 = random.uniform(0, 2 * math.pi)
             angle2 = angle1 + random.uniform(-0.5, 0.5)
@@ -224,8 +200,6 @@ class RasenganEffect:
             y2 = int(center[1] + math.sin(angle2) * r2)
 
             cv2.line(overlay, (x1, y1), (x2, y2), (255, 255, 255), 1, cv2.LINE_AA)
-
-        # Blend overlay with original frame
         cv2.addWeighted(overlay, 0.7, frame, 0.3, 0, frame)
 
         return frame
@@ -234,17 +208,17 @@ class RasenganEffect:
         """Draw UI elements"""
         h, w = frame.shape[:2]
 
-        # Title
+       
         cv2.putText(frame, "RASENGAN", (20, 50), 
                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (100, 200, 255), 3)
 
-        # Status
+     
         status = "CHAKRA CHARGED!" if hand_detected else "Show hand to charge..."
         color = (100, 255, 100) if hand_detected else (100, 100, 100)
         cv2.putText(frame, status, (20, h - 30), 
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
-        # Controls
+        
         controls = "Q: Quit | +/- : Size | C: Change Color"
         cv2.putText(frame, controls, (w - 400, h - 30), 
                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 150, 150), 1)
@@ -252,10 +226,10 @@ class RasenganEffect:
         return frame
 
 def main():
-    # Initialize camera
-    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # CAP_DSHOW for Windows stability
+    
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  
 
-    # Set resolution (adjust as needed)
+    
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
