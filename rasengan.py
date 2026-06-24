@@ -4,7 +4,7 @@ import math
 import random
 import mediapipe as mp
 from collections import deque
-import urllib.request
+import urllib.request   
 import os
 
 def download_model():
